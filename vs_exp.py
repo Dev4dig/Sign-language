@@ -18,7 +18,7 @@ def window():
    
    for i in range(5):
          button2.setText("Button2"+i)
-        time.sleep(2)
+         time.sleep(2)
    button2.clicked.connect(button2_clicked)
 
    widget.setGeometry(50,50,320,200)
