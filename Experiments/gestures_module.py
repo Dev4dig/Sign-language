@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 import math
 import mediapipe as mp
-
+from vs_com_interface import Gestures as g
 
 mp_hands = mp.solutions.hands
 lms = mp_hands.HandLandmark #landmarks constants i.e lms.WRIST
@@ -11,11 +11,12 @@ mp_drawing = mp.solutions.drawing_utils
 drawSpecs = mp_drawing.DrawingSpec(thickness=1, circle_radius=2,)
 
 
-# Model class for xy pixel pair¶
+# Model class for xy pixel pair z is in proportional form not in pixels
 class PixelXY:
-     def __init__(self, x, y):
+     def __init__(self, x, y, z=0):
         self.x = x
         self.y = y
+        self.z = z
         
 # ========================================
 # Model class for hand data
@@ -43,7 +44,7 @@ def get_all_xy(handLms, iw, ih):
     xy_pixels = []
     for index, lm in enumerate(handLms):
         x,y = get_pixel_xy(lm.x,lm.y,iw,ih)
-        xy_pixels.insert(index, PixelXY(x,y)) 
+        xy_pixels.insert(index, PixelXY(x,y,lm.z)) 
     return xy_pixels
 # ======================================================
 # Function for drawing distance line and text between two points¶
@@ -75,7 +76,7 @@ def draw_distance(p1, p2, lenth, img, direction=''):
         cv2.circle(img, (x2,y2), 5, (0,255,255), cv2.FILLED) #second point yellow
         cv2.circle(img, (cx,cy), 5, (255,255,0), cv2.FILLED) #centre point
     
-    cv2.putText(img, lenth, (cx,cy), cv2.FONT_HERSHEY_COMPLEX_SMALL, 1, (0,0, 255), 1, cv2.LINE_AA)
+    cv2.putText(img, str(int(lenth)), (cx,cy), cv2.FONT_HERSHEY_COMPLEX_SMALL, 1, (0,0, 255), 1, cv2.LINE_AA)
 
     return img
 
@@ -101,8 +102,10 @@ def get_distance_sign(x1,x2,y1,y2, hand, orientation):
                     dist_sign = '+'
         else:
             if orientation == 'v':
+                #negetive downward
                 if y2 > y1:
                     dist_sign = '-'
+                #positive upward
                 else:
                     if y2 < y1:
                         dist_sign = '+'
@@ -129,7 +132,7 @@ def get_distance_sign(x1,x2,y1,y2, hand, orientation):
 # =================================================
 # This function gives the distance between two points and draws it if
 #draw= True
-def distance(p1,p2, img=None, orientation = '', hand='', draw = False):
+def distance(p1,p2, orientation = '', hand=''):
     x1 = p1.x
     x2 = p2.x
     y1 = p1.y
@@ -145,14 +148,13 @@ def distance(p1,p2, img=None, orientation = '', hand='', draw = False):
     
     lenth = math.hypot(x2-x1, y2-y1)
     text_len = dist_sign+str(int(lenth))
-    if draw:
-        img = draw_distance(p1, p2, text_len,img )
-    return lenth, dist_sign, img
+    
+    return lenth, dist_sign
     
     # ===============================================
     # Only x distance
     
-def distanceX(p1,p2, img=None, orientation = 'h', hand='', draw = False):
+def distanceX(p1,p2, orientation = 'h', hand=''):
     x1 = p1.x
     x2 = p2.x
     y1 = p1.y
@@ -168,14 +170,12 @@ def distanceX(p1,p2, img=None, orientation = 'h', hand='', draw = False):
     
     lenth = int(x2-x1)
     text_len = dist_sign+str(int(lenth))
-    if draw:
-        img = draw_distance(p1, p2, text_len,img, 'x' )
-    return np.absolute(lenth), dist_sign, img
+    return np.absolute(lenth), dist_sign
 
 # =================================================
 # Only Y distance¶
 
-def distanceY(p1,p2, img=None, orientation = 'v', hand='', draw = False):
+def distanceY(p1,p2, orientation = 'v', hand=''):
     x1 = p1.x
     x2 = p2.x
     y1 = p1.y
@@ -186,20 +186,26 @@ def distanceY(p1,p2, img=None, orientation = 'v', hand='', draw = False):
     #for left hand distance is positive in left direction
     dist_sign = ''
     
-#     if hand:
-#         dist_sign = get_distance_sign(x1=x1, x2=x2, y1=y1, y2=y2, hand=hand, orientation=orientation)
+    if hand:
+        dist_sign = get_distance_sign(x1=x1, x2=x2, y1=y1, y2=y2, hand=hand, orientation=orientation)
     
     lenth = int(y1-y2)
     text_len = dist_sign+str(int(lenth))
-    if draw:
-        img = draw_distance(p1, p2, text_len,img, 'y' )
-    return lenth, dist_sign, img
+    return np.absolute(lenth), dist_sign
 
 # ===============================
+def check_finger(dip, tip):
+    distY, _, _ = distanceY(dip, tip)
+    distX, _, _ = distanceX(dip, tip)
+    
+
+
+
+#================================
 # Detect singal hand sign
 def detect_single_hand_sign(hands_data):
     
-    gesture = 'none'
+    gesture = g.NO_GESTURE
     
     label = hands_data[0].label
     points = hands_data[0].landmarks
@@ -217,30 +223,27 @@ def detect_single_hand_sign(hands_data):
     pinky_mcp = points[lms.PINKY_MCP]
     pinky_tip = points[lms.PINKY_TIP]
     
-    dist_mm_mt, sign_mm_mt, img = distanceX(p1=middle_mcp, p2=middle_tip, hand=label )
-    dist_rm_rt, sign_rm_rt, img = distanceX(p1=ring_mcp, p2=ring_tip, hand=label )
-    dist_pm_pt, sign_pm_pt, img = distanceX(p1=pinky_mcp, p2= pinky_tip, hand=label )
+    dist_mm_mt, sign_mm_mt = distanceX(p1=middle_mcp, p2=middle_tip, hand=label )
+    dist_rm_rt, sign_rm_rt = distanceX(p1=ring_mcp, p2=ring_tip, hand=label )
+    dist_pm_pt, sign_pm_pt = distanceX(p1=pinky_mcp, p2= pinky_tip, hand=label )
     
-    dist_im_it, sign_im_it, img = distanceX(p1=index_mcp, p2=index_tip, hand=label )
-    dist_id_it, sign_id_it, img = distanceX(p1=index_dip, p2=index_tip, hand=label )
+    dist_im_it, sign_im_it = distanceX(p1=index_mcp, p2=index_tip, hand=label )
+    dist_id_it, sign_id_it = distanceX(p1=index_dip, p2=index_tip, hand=label )
     
     if sign_id_it == '+':
         if sign_mm_mt == '-':
             if sign_rm_rt == '-':
                 if sign_pm_pt == '-':
                     if label == 'Left':
-                        gesture = 'point left'
+                        gesture = g.POINT_LEFT
                     else:
                         if label == 'Right':
-                            gesture = 'point right'
-    
-    
-    
+                            gesture = g.POINT_RIGHT
     return gesture
                 
 # =============================================
 # Detects if Zoom mode
-def detect_zoom(hands_data, img=None, draw=True ):
+def detect_zoom(hands_data):
     index_tip1 = hands_data[0].landmarks[lms.INDEX_FINGER_TIP]
     index_tip2 = hands_data[1].landmarks[lms.INDEX_FINGER_TIP]
                 
@@ -248,9 +251,9 @@ def detect_zoom(hands_data, img=None, draw=True ):
     thumb_tip2 = hands_data[1].landmarks[lms.THUMB_TIP]
                 
     
-    zoom_dist ,b, img = distance(p1=index_tip1, p2=index_tip2, orientation='h', img=img, draw=draw)
-    dist1, sign1, img = distance(p1=thumb_tip1, p2=index_tip1, img=img, draw=draw)
-    dist2, sign2, img = distance(p1=thumb_tip2, p2=index_tip2, img=img, draw=draw)
+    zoom_dist ,b = distance(p1=index_tip1, p2=index_tip2, orientation='h')
+    dist1, sign1 = distance(p1=thumb_tip1, p2=index_tip1)
+    dist2, sign2 = distance(p1=thumb_tip2, p2=index_tip2)
     
     
     threshold = 30
@@ -261,4 +264,4 @@ def detect_zoom(hands_data, img=None, draw=True ):
     else:
         zoom_indicator = False
     
-    return zoom_indicator, zoom_dist, img
+    return zoom_indicator, zoom_dist

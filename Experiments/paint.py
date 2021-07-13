@@ -20,7 +20,7 @@ class PaintApp(QtWidgets.QWidget):
         self.drawing_color = (255,255,0)
         self.header_path = r'C:\Users\Adnan Khan\Google Drive\FYP\Sign language\Experiments/h.png'
         self.header_img = cv2.imread(self.header_path)
-        self.setWindowFlags(Qt.FramelessWindowHint)
+        #self.setWindowFlags(Qt.FramelessWindowHint)
         
         #setting app mode to paint 
         self.interface.Mode = com.Modes.PAINT_WINDOW

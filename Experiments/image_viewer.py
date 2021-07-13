@@ -19,7 +19,7 @@ class ImageViewer(QtWidgets.QWidget):
         self.custom_height = 600
         self.resize(self.custom_width,self.custom_height)
        
-        self.setWindowFlags(Qt.FramelessWindowHint)
+        #self.setWindowFlags(Qt.FramelessWindowHint)
         
         self.image_pointer = 4
         

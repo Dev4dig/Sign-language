@@ -9,10 +9,25 @@ class Modes:
     IV_WINDOW = 3 # IMAGE VIEWER IV
     GESTURE_WINDOW = 4
     
+class Gestures:
+    ONE = 21
+    TWO = 22
+    THREE = 33
+    FOUR = 24
+    FIVE = 25
+    CLICK = 26
+    ZOOM_MODE = 27
+    DRAW_MODE = 28
+    POINT_LEFT = 29
+    POINT_RIGHT = 30
+    SAVE = 31
+    CLOSE = 32
+    NO_GESTURE = 0
+    
  
         
         
-
+ 
 
 class Com_interface:
     def __init__(self):

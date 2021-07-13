@@ -3,7 +3,7 @@ import vs_gesture_emulator as GE
 import vs_com_interface as com
 from image_viewer import ImageViewer
 from paint import PaintApp
-
+from vs_detection_module import *
 import os
 from threading import Thread
 import numpy as np
@@ -19,7 +19,7 @@ import sys
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QMessageBox as msgBox
 from PIL import Image
-
+ 
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self, i, parent=None):
@@ -31,7 +31,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.interface.Mode = com.Modes.MAIN_WINDOW
         
         #starting Background Thread
-        self.gesture_thread = GE.Gestures(self.interface)
+        self.gesture_thread = Detection_Module(self.interface)
         
         #registering events listeners
         self.gesture_thread.signal_mainPaint.connect(self.launch_paint)
@@ -45,7 +45,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.background_container.resize(600,400)
         self.background_container.setPixmap(QtGui.QPixmap.fromImage(QtGui.QImage(self.path).scaled(600, 400)))
         #self.background_container.setStyleSheet("border-radius: 15px;")
-        self.setWindowFlags(Qt.FramelessWindowHint)
+        #self.setWindowFlags(Qt.FramelessWindowHint)
         
         #self.setStyleSheet(" background-color:rgba(255,0,0,200); ")
         

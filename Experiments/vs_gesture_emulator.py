@@ -9,7 +9,7 @@ class Gestures(QtCore.QThread):
     signal_IVNext = QtCore.pyqtSignal()
     signal_IVPrev = QtCore.pyqtSignal()
     signal_IVZoom = QtCore.pyqtSignal(int,int,int,int)
-    
+     
     #paint signals
     signal_PaintDrawMode = QtCore.pyqtSignal(int, int, object)
     signal_PaintSelectMode = QtCore.pyqtSignal(int, int)
