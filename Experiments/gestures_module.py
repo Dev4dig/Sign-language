@@ -3,6 +3,7 @@ import numpy as np
 import math
 import mediapipe as mp
 from vs_com_interface import Gestures as g
+import vs_com_interface as com
 
 mp_hands = mp.solutions.hands
 lms = mp_hands.HandLandmark #landmarks constants i.e lms.WRIST
@@ -91,7 +92,7 @@ def get_distance_sign(x1,x2,y1,y2, hand, orientation):
     
     #for right hand distance is positive in right direction
     #for left hand distance is positive in left direction
-    if hand == "Right":
+    if hand == com.RIGHT_HAND:
         dist_sign = '+'
     
         if orientation == 'h':
@@ -110,7 +111,7 @@ def get_distance_sign(x1,x2,y1,y2, hand, orientation):
                     if y2 < y1:
                         dist_sign = '+'
     
-    if hand == "Left":
+    if hand == com.LEFT_HAND:
         dist_sign = '-'
 
         if orientation == 'h':
@@ -126,7 +127,7 @@ def get_distance_sign(x1,x2,y1,y2, hand, orientation):
                 else:
                     if y2 < y1:
                         dist_sign = '+'
-    return dist_sign
+    return dist_sign 
 
 
 # =================================================
@@ -173,7 +174,7 @@ def distanceX(p1,p2, orientation = 'h', hand=''):
     return np.absolute(lenth), dist_sign
 
 # =================================================
-# Only Y distance¶
+# Only Y distance
 
 def distanceY(p1,p2, orientation = 'v', hand=''):
     x1 = p1.x
@@ -184,61 +185,136 @@ def distanceY(p1,p2, orientation = 'v', hand=''):
      #it cares about left and right hand 
      #for right hand distance is positive in right direction
     #for left hand distance is positive in left direction
-    dist_sign = ''
+   
     
-    if hand:
-        dist_sign = get_distance_sign(x1=x1, x2=x2, y1=y1, y2=y2, hand=hand, orientation=orientation)
+    dist_sign = get_distance_sign(x1=x1, x2=x2, y1=y1, y2=y2, hand=hand, orientation=orientation)
     
     lenth = int(y1-y2)
     text_len = dist_sign+str(int(lenth))
     return np.absolute(lenth), dist_sign
 
-# ===============================
-def check_finger(dip, tip):
-    distY, _, _ = distanceY(dip, tip)
-    distX, _, _ = distanceX(dip, tip)
+#===============================
+def check_finger(dip, tip, hand):
+    distY, signY = distanceY(dip, tip, hand = hand)
+    distX, signX = distanceX(dip, tip, hand = hand)
+    
+    if distY > distX:
+        #when vertical
+        if signY == '+':
+            return com.FINGER_UP
+            
+        elif signY == '-':
+            #downward/close
+            return com.FINGER_DOWN
+            
+    elif distX > distY:
+        #when horizontal
+        if signX == '+': # + for in right direction for right hand and + for left hand in left direction
+                return com.FINGER_POINTY
+        else:
+            return com.FINGER_OPPOSITE
+    
+    #end if            
+# =============================================================
+def check_thumb(dip,tip, hand):
+    distX, signX = distanceX(dip, tip, hand = hand)
+    distY, signY = distanceY(dip, tip, hand = hand)
+    
+    if signX == '+':
+        return com.THUMB_CLOSE_H
+    elif signX == '-':
+        return  com.THUMB_OPEN_H
+    # elif distY > distX:
+    #     if signX == '+':
+    #         return com.THUMB_CLOSE
+    #     elif signX == '-':
+    #         return  com.THUMB_OPEN
     
 
 
-
-#================================
+#====================:============
 # Detect singal hand sign
-def detect_single_hand_sign(hands_data):
+def detect_single_hand_sign(hand):
     
     gesture = g.NO_GESTURE
     
-    label = hands_data[0].label
-    points = hands_data[0].landmarks
+    label = hand.label
+    points = hand.landmarks
     
-    index_mcp = points[lms.INDEX_FINGER_MCP]
+    
     index_dip = points[lms.INDEX_FINGER_DIP]
     index_tip = points[lms.INDEX_FINGER_TIP]
     
-    middle_mcp = points[lms.MIDDLE_FINGER_MCP]
+    middle_dip = points[lms.MIDDLE_FINGER_DIP]
     middle_tip = points[lms.MIDDLE_FINGER_TIP]
     
-    ring_mcp = points[lms.RING_FINGER_MCP]
+    ring_dip = points[lms.RING_FINGER_DIP]
     ring_tip = points[lms.RING_FINGER_TIP]
     
-    pinky_mcp = points[lms.PINKY_MCP]
+    pinky_dip = points[lms.PINKY_DIP]
     pinky_tip = points[lms.PINKY_TIP]
     
-    dist_mm_mt, sign_mm_mt = distanceX(p1=middle_mcp, p2=middle_tip, hand=label )
-    dist_rm_rt, sign_rm_rt = distanceX(p1=ring_mcp, p2=ring_tip, hand=label )
-    dist_pm_pt, sign_pm_pt = distanceX(p1=pinky_mcp, p2= pinky_tip, hand=label )
+    thumb_dip = points[lms.THUMB_IP]
+    thumb_tip = points[lms.THUMB_TIP]
     
-    dist_im_it, sign_im_it = distanceX(p1=index_mcp, p2=index_tip, hand=label )
-    dist_id_it, sign_id_it = distanceX(p1=index_dip, p2=index_tip, hand=label )
+    thumb_ = check_thumb(dip=thumb_dip, tip=thumb_tip, hand = label)
+    index_ = check_finger(dip=index_dip, tip=index_tip, hand = label)
+    middle_ = check_finger(dip=middle_dip, tip=middle_tip, hand = label)
+    ring_ = check_finger(dip=ring_dip, tip=ring_tip, hand = label)
+    pinky_ = check_finger(dip=pinky_dip, tip=pinky_tip, hand = label)
     
-    if sign_id_it == '+':
-        if sign_mm_mt == '-':
-            if sign_rm_rt == '-':
-                if sign_pm_pt == '-':
-                    if label == 'Left':
-                        gesture = g.POINT_LEFT
-                    else:
-                        if label == 'Right':
-                            gesture = g.POINT_RIGHT
+    dist_tt_it, sign_tt_it = distance(p1 = thumb_tip, p2 = index_tip, hand=label)
+    dist_threshold = 45
+    if index_ == com.FINGER_UP:
+        #index finger is up
+        if middle_ == com.FINGER_DOWN and ring_ == com.FINGER_DOWN and pinky_ == com.FINGER_DOWN :
+            #one
+            return com.Gestures.ONE
+            
+        elif middle_ == com.FINGER_UP and ring_ == com.FINGER_DOWN and pinky_ == com.FINGER_DOWN :
+            #two
+            return com.Gestures.TWO
+            
+        elif middle_ == com.FINGER_UP and ring_ == com.FINGER_UP and pinky_ == com.FINGER_DOWN:
+            #three
+            return com.Gestures.THREE
+            
+        elif middle_ == com.FINGER_UP and ring_ == com.FINGER_UP and pinky_ == com.FINGER_UP :
+            #four
+            return com.Gestures.FOUR
+            
+        # elif middle_ == com.FINGER_UP and ring_ == com.FINGER_UP and pinky_ == com.FINGER_UP and thumb_ == com.THUMB_OPEN_H:
+        #     #fFIVE
+        #     return com.Gestures.FIVE
+        
+            
+    elif dist_tt_it < dist_threshold and middle_ == com.FINGER_UP:
+        #click
+        return com.Gestures.CLICK
+    elif index_ == com.FINGER_POINTY and middle_ == com.FINGER_OPPOSITE and ring_ == com.FINGER_OPPOSITE and pinky_ == com.FINGER_OPPOSITE:
+        #pointing
+        return com.Gestures.POINTING
+    elif (pinky_  == com.FINGER_UP and thumb_ == com.THUMB_OPEN_H):
+        return com.CLOSE_GESTURE
+    
+    
+    
+    # dist_md_mt, sign_md_mt = distanceX(p1=middle_mcp, p2=middle_tip, hand=label )
+    # dist_rd_rt, sign_rd_rt = distanceX(p1=ring_mcp, p2=ring_tip, hand=label )
+    # dist_pd_pt, sign_pd_pt = distanceX(p1=pinky_mcp, p2= pinky_tip, hand=label )
+    
+    # dist_id_it, sign_id_it = distanceX(p1=index_mcp, p2=index_tip, hand=label )
+    # dist_td_tt, sign_td_tt = distanceX(p1=index_dip, p2=index_tip, hand=label )
+    
+    # if sign_id_it == '+':
+    #     if sign_mm_mt == '-':
+    #         if sign_rm_rt == '-':
+    #             if sign_pm_pt == '-':
+    #                 if label == 'Left':
+    #                     gesture = g.POINT_LEFT
+    #                 else:
+    #                     if label == 'Right':
+    #                         gesture = g.POINT_RIGHT
     return gesture
                 
 # =============================================

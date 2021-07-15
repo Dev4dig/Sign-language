@@ -35,7 +35,7 @@ class MainWindow(QtWidgets.QMainWindow):
         
         #registering events listeners
         self.gesture_thread.signal_mainPaint.connect(self.launch_paint)
-        self.gesture_thread.signal_mainIV.connect(self.launch_imgViewer)
+        self.gesture_thread.signal_mainIV.connect(self.launch_imgViewer) 
 
         #starting gesture thread
         self.gesture_thread.start()
@@ -44,7 +44,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.background_container = QtWidgets.QLabel(self)
         self.background_container.resize(600,400)
         self.background_container.setPixmap(QtGui.QPixmap.fromImage(QtGui.QImage(self.path).scaled(600, 400)))
-        #self.background_container.setStyleSheet("border-radius: 15px;")
+        #self.background_container.setStyleSheet("border-radius: 15px;")    
         #self.setWindowFlags(Qt.FramelessWindowHint)
         
         #self.setStyleSheet(" background-color:rgba(255,0,0,200); ")
@@ -94,12 +94,12 @@ class MainWindow(QtWidgets.QMainWindow):
         
     def launch_paint(self):
         self.paintWindow = PaintApp(self.interface, self.gesture_thread)
-        
+        print("launch paint")
        
         
     def launch_imgViewer(self):
         self.IV = ImageViewer(self.interface, self.gesture_thread)
-       
+        print("launch iv")
         
     
     def launch_GesturesView(self):

@@ -9,6 +9,7 @@ import cv2
 from PyQt5 import QtCore
 from vs_com_interface import Gestures as g
 import vs_com_interface as com
+import time
 
 
 class Detection_Module(QtCore.QThread):
@@ -20,8 +21,9 @@ class Detection_Module(QtCore.QThread):
     signal_IVZoom = QtCore.pyqtSignal(int,int,int,int)
      
     #paint signals
-    signal_PaintDrawMode = QtCore.pyqtSignal(int, int, object)
+    signal_PaintDrawMode = QtCore.pyqtSignal(int, int)
     signal_PaintSelectMode = QtCore.pyqtSignal(int, int)
+    signal_PaintClose = QtCore.pyqtSignal()
     
     def __init__(self, c, parent=None):
         super(Detection_Module,self).__init__(parent)
@@ -52,9 +54,14 @@ class Detection_Module(QtCore.QThread):
         prev_X, prev_Y = 0,0
         cur_X, cur_Y = 0,0 
         flag = True
-
+        
+        last_gesture_right = g.NO_GESTURE
+        last_gesture_left = g.NO_GESTURE
+        
+        
+        
         while True: 
-            
+             
             #dumpImg = np.zeros((720,1280,3))
             success, img = cap.read()
             gesturee = g.NO_GESTURE
@@ -68,8 +75,17 @@ class Detection_Module(QtCore.QThread):
                 
                 img = cv2.cvtColor(imgRGB, cv2.COLOR_RGB2BGR)
                 ih, iw, ic = img.shape
-                 
+                
+                self.interface.camera_view = imgRGB
                 if results.multi_hand_landmarks:
+                    
+                    current_left_gesture = g.NO_GESTURE
+                    current_right_gesture = g.NO_GESTURE
+                    
+                    left_hand = False
+                    right_hand = False
+                    
+                    
                     total_hands_data = [] #array of Hand objects contains data about all the hands in the frame
 
                     #custom code       
@@ -86,18 +102,32 @@ class Detection_Module(QtCore.QThread):
                         # Wrist XY
                         x = points[self.lms.WRIST].x
                         y = points[self.lms.WRIST].y
-                        hand_label = classification.classification[0].label
                         
-                        total_hands_data.append(gm.Hand(points, hand_label))#storing hands data for universal use
+                        hand_label = com.NO
+                        if classification.classification[0].label == "Left":
+                            hand_label = com.LEFT_HAND
+                            left_hand = True
+                        elif classification.classification[0].label == "Right":
+                            hand_label = com.RIGHT_HAND
+                            self.interface.pointerX = points[self.lms.INDEX_FINGER_TIP].x
+                            self.interface.pointerY = points[self.lms.INDEX_FINGER_TIP].y
+                            right_hand = True
+                        
+                        
+                        
+                        hand = gm.Hand(points, hand_label)
+                        total_hands_data.append(hand)#storing hands data for universal use
+                        
+                        tem_gesture = gm.detect_single_hand_sign(hand)
+                        if hand_label == com.RIGHT_HAND:
+                            current_right_gesture = tem_gesture
+                        elif hand_label == com.LEFT_HAND:
+                            current_left_gesture = tem_gesture
                         
                         #displaying label for hand at wrist location
-                        cv2.putText(img, hand_label, (x,y+20), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2, cv2.LINE_AA)
+                        cv2.putText(img, str(hand_label), (x,y+20), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2, cv2.LINE_AA)
                         
                         
-                        #dist,sign, img = distance(p1=points[lms.THUMB_TIP], p2=points[lms.INDEX_FINGER_TIP], orientation='v', img=img, draw=True, hand = hand_label)
-                        #drawing verticle line on hands
-                        hand_hight, s = gm.distance(p1=points[self.lms.WRIST], p2=points[self.lms.MIDDLE_FINGER_TIP], orientation='v', hand = hand_label)
-                        gm.draw_distance(p1=points[self.lms.WRIST], p2=points[self.lms.MIDDLE_FINGER_TIP], lenth = hand_hight, img = img)
                         
                         #for pixel in xy_pixels:
                             #cv2.putText(img, str(pixel.x), (pixel.x, pixel.y), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 1, cv2.LINE_AA)
@@ -106,32 +136,125 @@ class Detection_Module(QtCore.QThread):
                     #endfor hand_lms, classification in list(zipped)
                     total_hands = len(total_hands_data)
                     cv2.putText(img, str(total_hands), (30, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA)
-                    if total_hands == 1:
-                        #single hand
-                        gesture = gm.detect_single_hand_sign(total_hands_data)
-                        cv2.putText(img, str(gesture), (30, 90), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2, cv2.LINE_AA)
-                        gesturee = gesture
-                    if total_hands == 2:
-                        #drawing middle tip to tip distance for debugging
-                        #a,b = gm.distance(p1=total_hands_data[0].landmarks[self.lms.INDEX_FINGER_TIP], p2=total_hands_data[1].landmarks[self.lms.INDEX_FINGER_TIP], orientation='h', hand = hand_label)
-                        
-                        zoom_indicator, zoom_level = gm.detect_zoom(total_hands_data)
-                        
-                        if zoom_indicator:
-                            cv2.putText(img, "zoom mode: "+str(int(zoom_level)), (60, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2, cv2.LINE_AA)
-                            gm.draw_distance(p1=total_hands_data[0].landmarks[self.lms.INDEX_FINGER_TIP], p2=total_hands_data[1].landmarks[self.lms.INDEX_FINGER_TIP], img=img, lenth = zoom_level)
-                            
-                                    
                         
                     #decian making part
                     #only make decians if multihand landmarks (mean hands detected)
-                    if(self.interface.Mode == com.Modes.MAIN_WINDOW):    
-                        if gesturee == g.POINT_RIGHT:
-                            self.signal_mainPaint.emit()
-                        elif gesturee == g.POINT_LEFT:
-                            self.signal_mainIV.emit()
-                    elif(self.interface.Mode == com.Modes.IV_WINDOW):
+                    #print(str(gesturee))
+                    #cv2.putText(img, str(gesturee), (200, 200), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2, cv2.LINE_AA)
+                    
+                    
+                    #when in paint window
+                    if(self.interface.Mode == com.Modes.PAINT_WINDOW):
+                        
+                        #algorithm
+                        if right_hand:
+                            if left_hand:
+                                #both hands
+                                if(current_right_gesture == g.FOUR and current_left_gesture == g.ONE):
+                                    #draw
+                                    self.signal_PaintDrawMode.emit(self.interface.pointerX, self.interface.pointerY)
+                                    time.sleep(0.001)
+                                    print("draw two")
+                                    pass
+                                elif(current_right_gesture != g.CLICK and current_left_gesture == g.CLICK):
+                                    #click
+                                    if last_gesture_left != g.CLICK:
+                                        print("left click")
+                                        #self.signal_PaintSelectMode.emit(20,20)
+                                    pass
+                                elif(current_right_gesture == com.CLOSE_GESTURE and current_left_gesture == com.CLOSE_GESTURE):
+                                    #close
+                                    if (last_gesture_right != com.CLOSE_GESTURE or last_gesture_left != com.CLOSE_GESTURE):
+                                        print("close")
+                                        self.signal_PaintClose.emit()
+                                    pass
+                                pass
+                            else:
+                                #only ritht hand
+                                if current_right_gesture == g.CLICK:
+                                    # #draw
+                                    # print("draw single")
+                                    # self.signal_PaintDrawMode.emit(self.interface.pointerX, self.interface.pointerY)
+                                    # time.sleep(0.001)
+                                    pass
+                                elif current_right_gesture == g.TWO:
+                                    if last_gesture_right != g.TWO:
+                                         #save
+                                        print("right save")
+                                   
+                                    pass
+                                pass
+                        elif left_hand:
+                            #only left hand
+                            pass
                         pass
+                    
+                    #when in main window
+                    elif(self.interface.Mode == com.Modes.MAIN_WINDOW):
+                        if(current_right_gesture == g.ONE and current_left_gesture != g.ONE) or (current_right_gesture != g.ONE and current_left_gesture == g.ONE):
+                            if last_gesture_left != g.ONE and last_gesture_right != g.ONE:
+                                self.signal_mainPaint.emit()
+                        elif(current_right_gesture == g.TWO and current_left_gesture != g.TWO) or (current_right_gesture != g.TWO and current_left_gesture == g.TWO):
+                            if last_gesture_left != g.TWO and last_gesture_right != g.TWO:
+                                self.signal_mainIV.emit()
+                        pass
+                    
+                    #when in image viewer window
+                    elif(self.interface.Mode == com.Modes.IV_WINDOW):
+                        if total_hands == 2:
+                            #two hands
+                            is_zoom, zoom_level = gm.detect_zoom(total_hands_data)
+                            if is_zoom:
+                                #zoom mode
+                                print("zooming...")
+                                pass
+                            elif (current_right_gesture == g.POINTING and current_left_gesture != g.POINTING):
+                                #pointing right next
+                                if(last_gesture_right != g.POINTING):
+                                    self.signal_IVNext.emit()
+                                    print("pointing right 2")
+                                pass
+                            elif (current_right_gesture != g.POINTING and current_left_gesture == g.POINTING):
+                                #pointing left...prev
+                                if(last_gesture_left != g.POINTING):
+                                    self.signal_IVPrev.emit()
+                                    print("pointing left 2")
+                                pass
+                            elif(current_right_gesture == com.CLOSE_GESTURE and current_left_gesture == com.CLOSE_GESTURE):
+                                #close
+                                if (last_gesture_right != com.CLOSE_GESTURE or last_gesture_left != com.CLOSE_GESTURE):
+                                    print("close")
+                                pass
+                            elif (current_right_gesture == g.POINTING and current_left_gesture == g.POINTING):
+                                #both hands are pointing so do nothing
+                                pass
+                            pass
+                        elif total_hands == 1:
+                            #one hand
+                            if right_hand:
+                                #if only right hand
+                                if current_right_gesture == g.POINTING:
+                                    #pointing right...next
+                                    if last_gesture_right != g.POINTING:
+                                        self.signal_IVNext.emit()
+                                        print("pointing right 1")
+                                    pass
+                                pass
+                            elif left_hand:
+                                #left hand only
+                                if current_left_gesture == g.POINTING:
+                                    #pointing left... prev
+                                    if last_gesture_left != g.POINTING:
+                                        self.signal_IVPrev.emit()
+                                        print("pointing left 1")
+                                    pass
+                                pass
+                            pass
+                        pass
+                    
+                    
+                    last_gesture_left = current_left_gesture
+                    last_gesture_right = current_right_gesture
                     #multihand landmarks body
                 #endif multilandmarks   
                 

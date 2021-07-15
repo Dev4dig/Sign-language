@@ -12,18 +12,33 @@ class Modes:
 class Gestures:
     ONE = 21
     TWO = 22
-    THREE = 33
+    THREE = 23
     FOUR = 24
     FIVE = 25
     CLICK = 26
     ZOOM_MODE = 27
     DRAW_MODE = 28
-    POINT_LEFT = 29
+    POINTING = 29
     POINT_RIGHT = 30
     SAVE = 31
     CLOSE = 32
     NO_GESTURE = 0
     
+
+FINGER_UP = 40
+FINGER_DOWN = 41
+FINGER_RIGHT = 42
+FINGER_LEFT = 43
+FINGER_POINTY = 44
+FINGER_OPPOSITE = 45
+THUMB_OPEN_H = 46  #horizontal
+THUMB_CLOSE_H = 47 #horizontal
+THUMB_CLOSE_V = 48 #VERTICAL
+THUMB_OPEN_V = 49 #VERTICAL
+NO = 0  
+RIGHT_HAND = 51
+LEFT_HAND = 52
+CLOSE_GESTURE = 53
  
         
         
@@ -38,11 +53,10 @@ class Com_interface:
         self.CANVAS_H = 650
         self.CANVAS_W = 850
 
-        self.zoomX1 = 1
-        self.zoomY1 = 1
-        self.zoomX2 = 699
-        self.zoomY2 = 699   
-        
+        self.pointerX = 1
+        self.pointerY = 1
+         
+        self.camera_view = None
     
         
         
