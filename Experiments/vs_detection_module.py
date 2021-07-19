@@ -2,7 +2,7 @@
 import mediapipe as mp
 import threading
 import numpy as np
-import autopy
+
 import math
 import gestures_module as gm #Gesture module || Self custom
 import cv2
@@ -18,7 +18,7 @@ class Detection_Module(QtCore.QThread):
     signal_mainIV = QtCore.pyqtSignal()
     signal_IVNext = QtCore.pyqtSignal()
     signal_IVPrev = QtCore.pyqtSignal()
-    signal_IVZoom = QtCore.pyqtSignal(int,int,int,int)
+    signal_IVZoom = QtCore.pyqtSignal(int)
      
     #paint signals
     signal_PaintDrawMode = QtCore.pyqtSignal(int, int)
@@ -49,7 +49,7 @@ class Detection_Module(QtCore.QThread):
     
     def run(self):
         cap = cv2.VideoCapture(0)
-        sc_w, sc_h = autopy.screen.size()
+        # sc_w, sc_h = autopy.screen.size()
 
         prev_X, prev_Y = 0,0
         cur_X, cur_Y = 0,0 
@@ -57,8 +57,8 @@ class Detection_Module(QtCore.QThread):
         
         last_gesture_right = g.NO_GESTURE
         last_gesture_left = g.NO_GESTURE
-        
-        
+        last_zoom = False #whether there was zoom mode in last frame or not
+        last_zoom_dist= 0 #last frame zoom distance
         
         while True: 
              
@@ -70,7 +70,7 @@ class Detection_Module(QtCore.QThread):
                 imgRGB = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
                 
                  
-                imgRGB = cv2.resize(imgRGB, (850,650))
+                imgRGB = cv2.resize(imgRGB, (851,650))
                 results = self.hands.process(imgRGB)
                 
                 img = cv2.cvtColor(imgRGB, cv2.COLOR_RGB2BGR)
@@ -81,6 +81,8 @@ class Detection_Module(QtCore.QThread):
                     
                     current_left_gesture = g.NO_GESTURE
                     current_right_gesture = g.NO_GESTURE
+                    current_zoom = False
+                    current_zoom_dist = 0
                     
                     left_hand = False
                     right_hand = False
@@ -111,6 +113,9 @@ class Detection_Module(QtCore.QThread):
                             hand_label = com.RIGHT_HAND
                             self.interface.pointerX = points[self.lms.INDEX_FINGER_TIP].x
                             self.interface.pointerY = points[self.lms.INDEX_FINGER_TIP].y
+                            
+                            self.interface.drawingX = (points[self.lms.INDEX_FINGER_TIP].x + points[self.lms.THUMB_TIP].x)/2
+                            self.interface.drawingY = (points[self.lms.INDEX_FINGER_TIP].y + points[self.lms.THUMB_TIP].y)/2
                             right_hand = True
                         
                         
@@ -139,10 +144,10 @@ class Detection_Module(QtCore.QThread):
                         
                     #decian making part
                     #only make decians if multihand landmarks (mean hands detected)
-                    #print(str(gesturee))
-                    #cv2.putText(img, str(gesturee), (200, 200), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2, cv2.LINE_AA)
                     
-                    
+                    if total_hands ==2:
+                        current_zoom, current_zoom_dist = gm.detect_zoom(total_hands_data)
+                        gm.draw_distance(p1 = total_hands_data[0].landmarks[self.lms.THUMB_TIP], p2 =total_hands_data[1].landmarks[self.lms.THUMB_TIP], lenth = current_zoom, img = img)
                     #when in paint window
                     if(self.interface.Mode == com.Modes.PAINT_WINDOW):
                         
@@ -150,17 +155,17 @@ class Detection_Module(QtCore.QThread):
                         if right_hand:
                             if left_hand:
                                 #both hands
-                                if(current_right_gesture == g.FOUR and current_left_gesture == g.ONE):
+                                if(current_right_gesture == g.CLICK):
                                     #draw
-                                    self.signal_PaintDrawMode.emit(self.interface.pointerX, self.interface.pointerY)
+                                    self.signal_PaintDrawMode.emit(self.interface.drawingX, self.interface.drawingY)
                                     time.sleep(0.001)
                                     print("draw two")
                                     pass
-                                elif(current_right_gesture != g.CLICK and current_left_gesture == g.CLICK):
+                                elif(current_right_gesture == g.ONE):
                                     #click
-                                    if last_gesture_left != g.CLICK:
-                                        print("left click")
-                                        #self.signal_PaintSelectMode.emit(20,20)
+                                    if last_gesture_right != g.ONE:
+                                        #print("left click")
+                                        self.signal_PaintSelectMode.emit(self.interface.pointerX, self.interface.pointerY)
                                     pass
                                 elif(current_right_gesture == com.CLOSE_GESTURE and current_left_gesture == com.CLOSE_GESTURE):
                                     #close
@@ -170,32 +175,36 @@ class Detection_Module(QtCore.QThread):
                                     pass
                                 pass
                             else:
-                                #only ritht hand
+                                #only ritgt hand
                                 if current_right_gesture == g.CLICK:
                                     # #draw
                                     # print("draw single")
                                     # self.signal_PaintDrawMode.emit(self.interface.pointerX, self.interface.pointerY)
+                                    self.signal_PaintDrawMode.emit(self.interface.drawingX, self.interface.drawingY)
                                     # time.sleep(0.001)
                                     pass
-                                elif current_right_gesture == g.TWO:
-                                    if last_gesture_right != g.TWO:
-                                         #save
-                                        print("right save")
-                                   
+                                
+                                elif current_right_gesture == g.ONE:
+                                    if last_gesture_right != g.ONE:
+                                        self.signal_PaintSelectMode.emit(self.interface.pointerX, self.interface.pointerY) 
                                     pass
                                 pass
                         elif left_hand:
                             #only left hand
+                            if current_left_gesture == g.TWO:
+                                if last_gesture_left != g.TWO:
+                                    #save
+                                    print("right save")
                             pass
                         pass
                     
                     #when in main window
                     elif(self.interface.Mode == com.Modes.MAIN_WINDOW):
-                        if(current_right_gesture == g.ONE and current_left_gesture != g.ONE) or (current_right_gesture != g.ONE and current_left_gesture == g.ONE):
-                            if last_gesture_left != g.ONE and last_gesture_right != g.ONE:
+                        if(current_right_gesture == g.ONE and current_left_gesture != g.ONE):
+                            if last_gesture_right != g.ONE:
                                 self.signal_mainPaint.emit()
-                        elif(current_right_gesture == g.TWO and current_left_gesture != g.TWO) or (current_right_gesture != g.TWO and current_left_gesture == g.TWO):
-                            if last_gesture_left != g.TWO and last_gesture_right != g.TWO:
+                        elif(current_right_gesture == g.TWO and current_left_gesture != g.TWO):
+                            if last_gesture_left != g.TWO:
                                 self.signal_mainIV.emit()
                         pass
                     
@@ -203,10 +212,21 @@ class Detection_Module(QtCore.QThread):
                     elif(self.interface.Mode == com.Modes.IV_WINDOW):
                         if total_hands == 2:
                             #two hands
-                            is_zoom, zoom_level = gm.detect_zoom(total_hands_data)
-                            if is_zoom:
+                            
+                            if current_zoom:
                                 #zoom mode
                                 print("zooming...")
+                                if last_zoom:
+                                    #zoom in the last frame so send the difference
+                                    self.signal_IVZoom.emit(int(current_zoom_dist - last_zoom_dist)) 
+                                    pass
+                                elif not last_zoom:
+                                    #there was no zoom dist in last frame so send dist as zero
+                                    self.signal_IVZoom.emit(0)
+                                    pass
+                                
+                                
+                                
                                 pass
                             elif (current_right_gesture == g.POINTING and current_left_gesture != g.POINTING):
                                 #pointing right next
@@ -252,9 +272,10 @@ class Detection_Module(QtCore.QThread):
                             pass
                         pass
                     
-                    
+                    last_zoom, last_zoom_dist = current_zoom, current_zoom_dist
                     last_gesture_left = current_left_gesture
                     last_gesture_right = current_right_gesture
+                    
                     #multihand landmarks body
                 #endif multilandmarks   
                 

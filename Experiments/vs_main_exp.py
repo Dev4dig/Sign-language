@@ -6,8 +6,8 @@ from paint import PaintApp
 from vs_detection_module import *
 import os
 from threading import Thread
-import numpy as np
-import autopy
+import numpy as npcl
+
 import math
 import matplotlib.pyplot as plt
 import cv2
@@ -20,7 +20,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QMessageBox as msgBox
 from PIL import Image
  
-
+#B20CBF
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self, i, parent=None):
         super().__init__(parent)

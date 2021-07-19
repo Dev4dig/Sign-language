@@ -23,6 +23,7 @@ class Gestures:
     SAVE = 31
     CLOSE = 32
     NO_GESTURE = 0
+    SELECTION_CLICK = 55
     
 
 FINGER_UP = 40
@@ -51,11 +52,13 @@ class Com_interface:
         self.Zoom = True
         #colors: red 239,3,3 green 23,174,3 blue 0,0,253  black 0,0,0 ywllow 255, 255,0
         self.CANVAS_H = 650
-        self.CANVAS_W = 850
+        self.CANVAS_W = 851
 
         self.pointerX = 1
         self.pointerY = 1
          
+        self.drawingX = 0
+        self.drawingY = 0
         self.camera_view = None
     
         

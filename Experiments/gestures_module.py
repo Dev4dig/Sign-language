@@ -264,6 +264,9 @@ def detect_single_hand_sign(hand):
     pinky_ = check_finger(dip=pinky_dip, tip=pinky_tip, hand = label)
     
     dist_tt_it, sign_tt_it = distance(p1 = thumb_tip, p2 = index_tip, hand=label)
+    
+    dist_tt_pt, sign_tt_pt = distance(p1 = thumb_tip, p2 = pinky_tip, hand=label)
+    
     dist_threshold = 45
     if index_ == com.FINGER_UP:
         #index finger is up
@@ -283,9 +286,10 @@ def detect_single_hand_sign(hand):
             #four
             return com.Gestures.FOUR
             
-        # elif middle_ == com.FINGER_UP and ring_ == com.FINGER_UP and pinky_ == com.FINGER_UP and thumb_ == com.THUMB_OPEN_H:
-        #     #fFIVE
-        #     return com.Gestures.FIVE
+        elif middle_ == com.FINGER_UP and  ring_ == com.FINGER_UP:
+            if dist_tt_pt < dist_threshold:
+                return com.Gestures.SELECTION_CLICK
+            
         
             
     elif dist_tt_it < dist_threshold and middle_ == com.FINGER_UP:
@@ -296,7 +300,7 @@ def detect_single_hand_sign(hand):
         return com.Gestures.POINTING
     elif (pinky_  == com.FINGER_UP and thumb_ == com.THUMB_OPEN_H):
         return com.CLOSE_GESTURE
-    
+   
     
     
     # dist_md_mt, sign_md_mt = distanceX(p1=middle_mcp, p2=middle_tip, hand=label )
