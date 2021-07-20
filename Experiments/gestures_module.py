@@ -300,7 +300,9 @@ def detect_single_hand_sign(hand):
         return com.Gestures.POINTING
     elif (pinky_  == com.FINGER_UP and thumb_ == com.THUMB_OPEN_H):
         return com.CLOSE_GESTURE
-   
+    
+    elif index_ == com.FINGER_DOWN and middle_ == com.FINGER_DOWN and ring_ == com.FINGER_DOWN and pinky_ == com.FINGER_DOWN and thumb_ == com.THUMB_CLOSE_H:
+        return com.HAND_CLOSE
     
     
     # dist_md_mt, sign_md_mt = distanceX(p1=middle_mcp, p2=middle_tip, hand=label )

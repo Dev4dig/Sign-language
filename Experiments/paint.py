@@ -137,9 +137,13 @@ class PaintApp(QtWidgets.QWidget):
         
         self.show()
         
-    def onDraw(self, x, y):
+    def onDraw(self, x, y, last_drawing): # signal indicates whether draing is continues of started again
         
         if y > 60 and y<600:
+            if not last_drawing:
+                self.last_drawingX = 0
+                self.last_drawingY = 0
+            
             if self.mode == DrawModes.BRUSH:
                 #draw here
                 if self.last_drawingX == 0 and self.last_drawingY == 0:
@@ -329,7 +333,7 @@ class PaintApp(QtWidgets.QWidget):
             elif self.mode == DrawModes.ERASER:
                 image[5:58, 702:764] = self.eraser_en_img       
             if self.is_webcam:
-                image[4:57, 365:418] = self.camera_en_img         
+                image[4:57, 351:404] = self.camera_en_img         
             #drawing cursor 
             if self.mode == DrawModes.ERASER:
                 cv2.circle(image, (self.interface.pointerX,self.interface.pointerY),  self.eraser_size, colors.CYAN, cv2.FILLED)      

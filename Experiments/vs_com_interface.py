@@ -40,7 +40,7 @@ NO = 0
 RIGHT_HAND = 51
 LEFT_HAND = 52
 CLOSE_GESTURE = 53
- 
+HAND_CLOSE = 56
         
         
  
@@ -61,7 +61,8 @@ class Com_interface:
         self.drawingY = 0
         self.camera_view = None
     
-        
+        self.zoom_centerX = 0
+        self.zoom_centerY = 0
         
         #signals from Gesture Algorithm/module/thread to App 
         self.i = 0
