@@ -20,6 +20,7 @@ class Detection_Module(QtCore.QThread):
     signal_IVPrev = QtCore.pyqtSignal()
     signal_IVZoom = QtCore.pyqtSignal(int)
     signal_IVZoomDrag = QtCore.pyqtSignal(int, int)
+    signal_IVClose = QtCore.pyqtSignal()
     
     #paint signals
     signal_PaintDrawMode = QtCore.pyqtSignal(int, int, bool)
@@ -276,6 +277,7 @@ class Detection_Module(QtCore.QThread):
                                 #close
                                 if (last_gesture_right != com.CLOSE_GESTURE or last_gesture_left != com.CLOSE_GESTURE):
                                     print("close")
+                                    self.signal_IVClose.emit()
                                 pass
                             elif (current_right_gesture == g.POINTING and current_left_gesture == g.POINTING):
                                 #both hands are pointing so do nothing

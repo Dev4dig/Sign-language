@@ -43,9 +43,9 @@ class ImageViewer(QtWidgets.QWidget):
         self.gesture_thread.signal_IVNext.connect(self.nextImg)
         self.gesture_thread.signal_IVPrev.connect(self.prevImg)
         self.gesture_thread.signal_IVZoom.connect(self.zoom)
-        
+        self.gesture_thread.signal_IVZoom.connect(self.zoom)
         self.gesture_thread.signal_IVZoomDrag.connect(self.drag_img)
-        
+        self.gesture_thread.signal_IVClose.connect(self.closeCustom)
         
         self.interface.Mode = com.Modes.IV_WINDOW
         self.setWindowTitle("Image Viewer ")
@@ -63,23 +63,11 @@ class ImageViewer(QtWidgets.QWidget):
     def focusHandle(self):
         print(self.isActiveWindow())
     #=======================================================================================================
-    def closeEvent(self,event):
-        
+    def closeCustom(self):
         print("Window is being closed")
-        reply =  msgBox.question(self, "Confirmation", "Are You Sure? ", msgBox.No | msgBox.Yes)
-        print("----00")
-        if reply == msgBox.Yes:
-            print("----0")
-            self.thread = False
-            self.interface.Mode = com.Modes.MAIN_WINDOW
-            print("----1")
-           
-            print("----2")
-            event.accept()
-            
-        if reply == msgBox.No:
-            pass
-            event.ignore()
+        self.thread = False
+        self.interface.Mode = com.Modes.MAIN_WINDOW
+        self.close()
     #closeEvent
     #=======================================================================================================
     #reset all zoom paramerters when image changs or first appears
@@ -91,8 +79,8 @@ class ImageViewer(QtWidgets.QWidget):
         self.zoomY2 = self.custom_height
          
         self.zoomed_img = self.origonal_img 
-        self.maxZoom_verticle = int(self.custom_height - (self.custom_height/10))
-        self.maxZoom_horizontal = int(self.custom_width - (self.custom_width/10))
+        self.maxZoom_verticle = int(self.custom_height - (self.custom_height/5))
+        self.maxZoom_horizontal = int(self.custom_width - (self.custom_width/5))
         
                
         self.zoom_ratio_const = self.custom_width/self.custom_height

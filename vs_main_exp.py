@@ -1,5 +1,5 @@
 #import vs_detection_module as gestues
-import vs_gesture_emulator as GE
+
 import vs_com_interface as com
 from image_viewer import ImageViewer
 from paint import PaintApp
