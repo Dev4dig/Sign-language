@@ -17,7 +17,7 @@ class PixelXY:
      def __init__(self, x, y, z=0):
         self.x = x
         self.y = y
-        self.z = z
+        self.z = z 
         
 # ========================================
 # Model class for hand data
@@ -268,23 +268,29 @@ def detect_single_hand_sign(hand):
     dist_tt_pt, sign_tt_pt = distance(p1 = thumb_tip, p2 = pinky_tip, hand=label)
     
     dist_threshold = 45
+    
     if index_ == com.FINGER_UP:
         #index finger is up
-        if middle_ == com.FINGER_DOWN and ring_ == com.FINGER_DOWN and pinky_ == com.FINGER_DOWN :
+        if middle_ == com.FINGER_DOWN and ring_ == com.FINGER_DOWN and pinky_ == com.FINGER_DOWN and thumb_ == com.THUMB_CLOSE_H:
             #one
             return com.Gestures.ONE
             
-        elif middle_ == com.FINGER_UP and ring_ == com.FINGER_DOWN and pinky_ == com.FINGER_DOWN :
+        elif middle_ == com.FINGER_UP and ring_ == com.FINGER_DOWN and pinky_ == com.FINGER_DOWN and thumb_ == com.THUMB_CLOSE_H:
             #two
             return com.Gestures.TWO
             
-        elif middle_ == com.FINGER_UP and ring_ == com.FINGER_UP and pinky_ == com.FINGER_DOWN:
+        elif middle_ == com.FINGER_UP and ring_ == com.FINGER_UP and pinky_ == com.FINGER_DOWN and thumb_ == com.THUMB_CLOSE_H:
             #three
             return com.Gestures.THREE
             
-        elif middle_ == com.FINGER_UP and ring_ == com.FINGER_UP and pinky_ == com.FINGER_UP :
+        elif middle_ == com.FINGER_UP and ring_ == com.FINGER_UP and pinky_ == com.FINGER_UP and thumb_ == com.THUMB_CLOSE_H:
             #four
             return com.Gestures.FOUR
+
+        elif middle_ == com.FINGER_UP and ring_ == com.FINGER_UP and pinky_ == com.FINGER_UP and thumb_ == com.THUMB_OPEN_H:
+            #four
+            return com.Gestures.FIVE
+            # print(thumb_)
             
         elif middle_ == com.FINGER_UP and  ring_ == com.FINGER_UP:
             if dist_tt_pt < dist_threshold:
@@ -298,11 +304,13 @@ def detect_single_hand_sign(hand):
     elif index_ == com.FINGER_POINTY and middle_ == com.FINGER_OPPOSITE and ring_ == com.FINGER_OPPOSITE and pinky_ == com.FINGER_OPPOSITE:
         #pointing
         return com.Gestures.POINTING
-    elif (pinky_  == com.FINGER_UP and thumb_ == com.THUMB_OPEN_H):
+    elif (pinky_  == com.FINGER_UP and thumb_ == com.THUMB_OPEN_H and index_ == com.FINGER_DOWN and middle_ == com.FINGER_DOWN and ring_ == com.FINGER_DOWN ):
         return com.CLOSE_GESTURE
     
     elif index_ == com.FINGER_DOWN and middle_ == com.FINGER_DOWN and ring_ == com.FINGER_DOWN and pinky_ == com.FINGER_DOWN and thumb_ == com.THUMB_CLOSE_H:
         return com.HAND_CLOSE
+
+    
     
     
     # dist_md_mt, sign_md_mt = distanceX(p1=middle_mcp, p2=middle_tip, hand=label )

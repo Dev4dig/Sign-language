@@ -46,6 +46,7 @@ class ImageViewer(QtWidgets.QWidget):
         self.gesture_thread.signal_IVZoom.connect(self.zoom)
         self.gesture_thread.signal_IVZoomDrag.connect(self.drag_img)
         self.gesture_thread.signal_IVClose.connect(self.closeCustom)
+        self.gesture_thread.signal_IVClose.connect(self.closeCustom)
         
         self.interface.Mode = com.Modes.IV_WINDOW
         self.setWindowTitle("Image Viewer ")
@@ -65,9 +66,9 @@ class ImageViewer(QtWidgets.QWidget):
     #=======================================================================================================
     def closeCustom(self):
         print("Window is being closed")
-        self.thread = False
-        self.interface.Mode = com.Modes.MAIN_WINDOW
-        self.close()
+        # self.thread = False
+        # self.interface.Mode = com.Modes.MAIN_WINDOW
+        # self.close()
     #closeEvent
     #=======================================================================================================
     #reset all zoom paramerters when image changs or first appears
@@ -250,5 +251,9 @@ class ImageViewer(QtWidgets.QWidget):
         # #     #print("IV thread Running")
         pass
             
-           
+    def closeCustom(self):
+        print("Window is being closed")
+        self.thread = False
+        self.interface.Mode = com.Modes.MAIN_WINDOW
+        self.close()   
             

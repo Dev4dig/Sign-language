@@ -7,7 +7,9 @@ class Modes:
     MAIN_WINDOW = 1
     PAINT_WINDOW = 2
     IV_WINDOW = 3 # IMAGE VIEWER IV
-    GESTURE_WINDOW = 4
+    
+    GV_WINDOW = 4
+    
     
 class Gestures:
     ONE = 21
@@ -24,6 +26,7 @@ class Gestures:
     CLOSE = 32
     NO_GESTURE = 0
     SELECTION_CLICK = 55
+    
     
 
 FINGER_UP = 40

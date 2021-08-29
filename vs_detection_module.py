@@ -16,6 +16,8 @@ class Detection_Module(QtCore.QThread):
     
     signal_mainPaint = QtCore.pyqtSignal()
     signal_mainIV = QtCore.pyqtSignal()
+    signal_mainGV = QtCore.pyqtSignal()
+    
     signal_IVNext = QtCore.pyqtSignal()
     signal_IVPrev = QtCore.pyqtSignal()
     signal_IVZoom = QtCore.pyqtSignal(int)
@@ -27,6 +29,24 @@ class Detection_Module(QtCore.QThread):
     signal_PaintSelectMode = QtCore.pyqtSignal(int, int)
     signal_PaintClose = QtCore.pyqtSignal()
     
+    # gesture window signals
+    signal_GVClose = QtCore.pyqtSignal()
+    signal_GV_ONE = QtCore.pyqtSignal()
+    signal_GV_TWO = QtCore.pyqtSignal()
+    signal_GV_THREE = QtCore.pyqtSignal()
+    signal_GV_FOUR = QtCore.pyqtSignal()
+    signal_GV_FIVE = QtCore.pyqtSignal()
+    signal_GV_HAND_CLOSE = QtCore.pyqtSignal()
+    
+    signal_GV_LEFT_CLOSE = QtCore.pyqtSignal()
+    signal_GV_RIGHT_CLOSE = QtCore.pyqtSignal()
+    
+    signal_GV_POINT_RIGHT = QtCore.pyqtSignal()
+    signal_GV_POINT_LEFT = QtCore.pyqtSignal()
+    
+    signal_GV_RIGHT_CLICK = QtCore.pyqtSignal()
+    signal_GV_LEFT_CLICK = QtCore.pyqtSignal()
+    signal_GV_ZOOM = QtCore.pyqtSignal()
     
     
     def __init__(self, c, parent=None):
@@ -39,6 +59,7 @@ class Detection_Module(QtCore.QThread):
         self.hands = gm.hands
         self.mp_drawing = gm.mp_drawing
         self.drawSpecs = gm.drawSpecs
+       
         pass
     #end __init__()
     
@@ -50,6 +71,8 @@ class Detection_Module(QtCore.QThread):
                                             self.mp_drawing.DrawingSpec(color=(250, 44, 250), thickness=2, circle_radius=2),
                                             )
         return img
+    
+    
     
     def run(self):
         cap = cv2.VideoCapture(0)
@@ -69,7 +92,9 @@ class Detection_Module(QtCore.QThread):
         
         last_drawing = False #whether the drawing was present in the last frame or not
         while True: 
-             
+            background = np.full((650,650, 3), 255, dtype=np.uint8)#np.ones((650,650, 3), np.uint8)
+            #background = background.fill
+           
             #dumpImg = np.zeros((720,1280,3))
             success, img = cap.read()
             gesturee = g.NO_GESTURE
@@ -187,12 +212,10 @@ class Detection_Module(QtCore.QThread):
                                     self.signal_PaintDrawMode.emit(self.interface.pointerX, self.interface.pointerY, last_drawing)
                                     current_draw = True
                                     
-                                elif(current_right_gesture == g.ONE):
-                                    #click
-                                    if last_gesture_right != g.ONE:
-                                        #print("left click")
+                                elif current_right_gesture == g.TWO:
+                                    if last_gesture_right != g.TWO:
                                         self.signal_PaintSelectMode.emit(self.interface.pointerX, self.interface.pointerY)
-                                    pass
+                                        
                                 elif(current_right_gesture == com.CLOSE_GESTURE and current_left_gesture == com.CLOSE_GESTURE):
                                     #close
                                     if (last_gesture_right != com.CLOSE_GESTURE or last_gesture_left != com.CLOSE_GESTURE):
@@ -213,13 +236,7 @@ class Detection_Module(QtCore.QThread):
                                         self.signal_PaintSelectMode.emit(self.interface.pointerX, self.interface.pointerY) 
                                     pass
                                 pass
-                        elif left_hand:
-                            #only left hand
-                            if current_left_gesture == g.TWO:
-                                if last_gesture_left != g.TWO:
-                                    #save
-                                    print("right save")
-                            pass
+                       
                         pass
                      #===============================================================
                     #===============================================================
@@ -228,12 +245,15 @@ class Detection_Module(QtCore.QThread):
                     #===============================================================
                     #when in main window
                     elif(self.interface.Mode == com.Modes.MAIN_WINDOW):
-                        if(current_right_gesture == g.ONE and current_left_gesture != g.ONE):
-                            if last_gesture_right != g.ONE:
+                        if(current_right_gesture == g.ONE or current_left_gesture == g.ONE):
+                            if last_gesture_right != g.ONE and last_gesture_left != g.ONE:
                                 self.signal_mainPaint.emit()
-                        elif(current_right_gesture == g.TWO and current_left_gesture != g.TWO):
-                            if last_gesture_left != g.TWO:
+                        elif(current_right_gesture == g.TWO or current_left_gesture == g.TWO):
+                            if last_gesture_left != g.TWO and last_gesture_left != g.TWO:
                                 self.signal_mainIV.emit()
+                        elif(current_right_gesture == g.THREE or current_left_gesture == g.TWO):
+                            if last_gesture_left != g.TWO and last_gesture_left != g.THREE:
+                                self.signal_mainGV.emit()
                         pass
                      #===============================================================
                     #===============================================================
@@ -283,6 +303,9 @@ class Detection_Module(QtCore.QThread):
                                 #both hands are pointing so do nothing
                                 pass
                             
+                            
+                            elif(current_right_gesture == com.CLOSE_GESTURE and current_left_gesture == com.CLOSE_GESTURE):
+                                self.signal_IVClose.emit()
                            
                                     
                             elif current_right_gesture == com.HAND_CLOSE:
@@ -324,6 +347,75 @@ class Detection_Module(QtCore.QThread):
                             pass
                         pass
                     
+                    elif(self.interface.Mode == com.Modes.GV_WINDOW):
+                        if(right_hand and (not left_hand)):
+                           
+                            if(current_right_gesture == g.ONE):
+                                 self.signal_GV_ONE.emit()
+                            
+                            if(current_right_gesture == g.TWO):
+                                self.signal_GV_TWO.emit()
+                            
+                            if(current_right_gesture == g.THREE):
+                                self.signal_GV_THREE.emit()
+                            
+                            if(current_right_gesture == g.FOUR):
+                                self.signal_GV_FOUR.emit()
+                                
+                            if(current_right_gesture == g.FIVE):
+                                self.signal_GV_FIVE.emit()
+                            
+                            if(current_right_gesture == g.POINTING):
+                                self.signal_GV_POINT_RIGHT.emit()
+                                                            
+                            
+                            if(current_right_gesture == g.CLICK):
+                                self.signal_GV_RIGHT_CLICK.emit()
+                           
+                            if(current_right_gesture == com.HAND_CLOSE):
+                                self.signal_GV_HAND_CLOSE.emit()
+                            
+                            if(current_right_gesture == g.CLOSE):
+                                self.signal_GV_RIGHT_CLOSE.emit()
+                        # only left hand
+                        elif(left_hand and (not right_hand)):
+                            
+                            if(current_left_gesture == g.ONE):
+                                 self.signal_GV_ONE.emit()
+                            
+                            if(current_left_gesture == g.TWO):
+                                self.signal_GV_TWO.emit()
+                            
+                            if(current_left_gesture == g.THREE):
+                                self.signal_GV_THREE.emit()
+                            
+                            if(current_left_gesture == g.FOUR):
+                                self.signal_GV_FOUR.emit()
+                                
+                            if(current_left_gesture == g.FIVE):
+                                self.signal_GV_FIVE.emit()
+                            
+                            if(current_left_gesture == g.POINTING):
+                                self.signal_GV_POINT_LEFT.emit()
+                            
+                            if(current_left_gesture == g.CLICK):
+                                self.signal_GV_LEFT_CLICK.emit()
+                           
+                            if(current_left_gesture == com.HAND_CLOSE):
+                                self.signal_GV_HAND_CLOSE.emit()
+                            
+                            if(current_left_gesture == g.CLOSE):
+                                self.signal_GV_LEFT_CLOSE.emit()
+
+                        elif (right_hand and left_hand):
+                            if(current_zoom):
+                                self.signal_GV_ZOOM.emit()
+                                
+                            if(current_right_gesture == com.CLOSE_GESTURE and current_left_gesture == com.CLOSE_GESTURE):
+                                self.signal_GVClose.emit() 
+                           
+                                                    
+                        
                     last_zoom, last_zoom_dist = current_zoom, current_zoom_dist
                     last_gesture_left = current_left_gesture
                     last_gesture_right = current_right_gesture
@@ -356,7 +448,7 @@ class Detection_Module(QtCore.QThread):
 
 # a = Detection_Module(1)
 # a.run()
-
+ 
 
 
 

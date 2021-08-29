@@ -76,7 +76,7 @@ class PaintApp(QtWidgets.QWidget):
         self.camera_en_path = r'C:\Users\Adnan Khan\Google Drive\FYP\Sign language\visuals/camera-en.png'
         self.brush_en_path = r'C:\Users\Adnan Khan\Google Drive\FYP\Sign language\visuals/brush-en.png'
         
-        self.brush_en_img = cv2.imread(self.brush_en_path)
+        self.brush_en_img = cv2.imread(self.brush_en_path) 
         self.eraser_en_img = cv2.imread(self.eraser_en_path)
         self.camera_en_img = cv2.imread(self.camera_en_path)
         
